@@ -250,13 +250,19 @@ class VideoService:
             # Get video quality settings
             quality_settings = self._get_quality_settings()
 
+            # Convert Windows path to forward slashes and escape for FFmpeg
+            # FFmpeg accepts forward slashes on all platforms including Windows
+            subtitle_path_str = str(subtitle_path).replace('\\', '/')
+            # Escape special characters for FFmpeg filter
+            subtitle_path_escaped = subtitle_path_str.replace(':', '\\:')
+
             # Build FFmpeg command to burn subtitles
             (
                 ffmpeg
                 .input(str(video_path))
                 .output(
                     str(output_path),
-                    vf=f"subtitles={subtitle_path}",
+                    vf=f"subtitles='{subtitle_path_escaped}'",
                     **quality_settings
                 )
                 .overwrite_output()
