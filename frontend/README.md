@@ -19,6 +19,30 @@ Chat-based video editing application with AI-powered subtitle generation and sty
 - **Axios** - HTTP client for API calls
 - **CSS3** - Styling with custom properties
 
+## Project Structure
+
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── ChatInterface.jsx      # Chat UI for prompts
+│   │   ├── ChatMessage.jsx        # Individual message display
+│   │   ├── VideoPlayer.jsx        # Video playback with subtitles
+│   │   ├── VideoUploader.jsx      # File upload component
+│   │   └── ExportButton.jsx       # Export final video
+│   ├── services/
+│   │   └── api.js                 # Backend API integration
+│   ├── hooks/
+│   │   └── useVideoSession.js     # Video state management
+│   ├── utils/
+│   │   ├── constants.js           # App constants
+│   │   └── helpers.js             # Helper functions
+│   ├── styles/                    # Component-specific styles
+│   ├── App.jsx                    # Main app component
+│   └── main.jsx                   # Entry point
+├── .env.example                   # Environment variables template
+└── package.json
+```
 
 ## Getting Started
 

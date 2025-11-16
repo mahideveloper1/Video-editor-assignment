@@ -78,21 +78,20 @@ export const uploadVideo = async (file, onProgress) => {
  * Send chat message/prompt
  * @param {string} sessionId - Video session ID
  * @param {string} message - User message/prompt
- * @param {string} videoId - Video ID
+ * @param {string} videoId - Video ID (optional, for backward compatibility)
  * @returns {Promise} Chat response
  */
 export const sendChatMessage = async (sessionId, message, videoId) => {
   try {
     const response = await apiClient.post(API_ENDPOINTS.CHAT, {
       session_id: sessionId,
-      video_id: videoId,
       message: message,
     });
 
     return response.data;
   } catch (error) {
     throw new Error(
-      error.response?.data?.message || 'Failed to process message'
+      error.response?.data?.detail || error.response?.data?.message || 'Failed to process message'
     );
   }
 };
@@ -100,20 +99,20 @@ export const sendChatMessage = async (sessionId, message, videoId) => {
 /**
  * Export video with burned subtitles
  * @param {string} sessionId - Video session ID
- * @param {string} videoId - Video ID
+ * @param {string} filename - Optional output filename
  * @returns {Promise} Export response with download URL
  */
-export const exportVideo = async (sessionId, videoId) => {
+export const exportVideo = async (sessionId, filename = null) => {
   try {
     const response = await apiClient.post(API_ENDPOINTS.EXPORT, {
       session_id: sessionId,
-      video_id: videoId,
+      filename: filename,
     });
 
     return response.data;
   } catch (error) {
     throw new Error(
-      error.response?.data?.message || 'Failed to export video'
+      error.response?.data?.detail || error.response?.data?.message || 'Failed to export video'
     );
   }
 };
@@ -140,16 +139,37 @@ export const getVideoPreview = async (sessionId, videoId) => {
 
 /**
  * Download file from URL
- * @param {string} url - File URL
+ * @param {string} url - File URL (relative or absolute)
  * @param {string} filename - Desired filename
  */
-export const downloadFile = (url, filename) => {
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+export const downloadFile = async (url, filename) => {
+  try {
+    // Construct full URL if it's a relative path
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+
+    // Fetch the file as a blob to prevent navigation
+    const response = await fetch(fullUrl);
+    if (!response.ok) {
+      throw new Error('Download failed');
+    }
+
+    const blob = await response.blob();
+
+    // Create a blob URL and trigger download
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Clean up the blob URL
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Download error:', error);
+    throw new Error('Failed to download file');
+  }
 };
 
 export default apiClient;

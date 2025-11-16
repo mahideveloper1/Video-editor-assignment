@@ -6,8 +6,9 @@ from typing import TypedDict, List, Optional, Dict, Any, Annotated
 from operator import add
 
 
-class SubtitleEdit(TypedDict):
+class SubtitleEdit(TypedDict, total=False):
     """Represents a single subtitle to be added/edited."""
+    subtitle_index: Optional[int]  # Index of subtitle to modify (-1 for last, None for new)
     text: str
     start_time: float
     end_time: float
@@ -19,7 +20,7 @@ class SubtitleEdit(TypedDict):
     italic: Optional[bool]
 
 
-class VideoEditState(TypedDict):
+class VideoEditState(TypedDict, total=False):
     """
     State for the video editing LangGraph workflow.
     This state is passed through all nodes in the graph.
@@ -31,7 +32,7 @@ class VideoEditState(TypedDict):
     user_message: str
 
     # Parsed intent and parameters
-    intent: Optional[str]  # "add_subtitle", "modify_style", "remove_subtitle", etc.
+    intent: Optional[str]  # "add_subtitle", "modify_subtitle", "remove_subtitle", etc.
     extracted_params: Optional[Dict[str, Any]]
 
     # Current subtitles (list of subtitle dicts)
@@ -39,6 +40,9 @@ class VideoEditState(TypedDict):
 
     # Subtitle edits to apply
     subtitle_edits: Optional[List[SubtitleEdit]]
+
+    # Track modifications
+    modified_index: Optional[int]
 
     # Chat history
     chat_history: Annotated[List[Dict[str, str]], add]

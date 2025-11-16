@@ -1,7 +1,7 @@
 import { MESSAGE_TYPES } from '../utils/constants';
 
 const ChatMessage = ({ message }) => {
-  const { type, content, timestamp, metadata } = message;
+  const { type, content, timestamp } = message;
 
   const isUser = type === MESSAGE_TYPES.USER;
   const isAI = type === MESSAGE_TYPES.AI;
@@ -86,68 +86,6 @@ const ChatMessage = ({ message }) => {
         <div className="text-sm leading-relaxed text-gray-700 break-words">
           {content}
         </div>
-
-        {/* Display extracted metadata if available */}
-        {metadata && Object.keys(metadata).length > 0 && (
-          <div className="mt-3 p-3 bg-gray-50 border-l-3 border-primary rounded">
-            <div className="text-xs font-semibold text-gray-800 mb-2">
-              Extracted Parameters:
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {metadata.action && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Action:</span>
-                  <span className="text-gray-800">{metadata.action}</span>
-                </div>
-              )}
-              {metadata.subtitle_text && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Text:</span>
-                  <span className="text-gray-800">"{metadata.subtitle_text}"</span>
-                </div>
-              )}
-              {metadata.font_family && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Font:</span>
-                  <span className="text-gray-800">{metadata.font_family}</span>
-                </div>
-              )}
-              {metadata.font_size && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Size:</span>
-                  <span className="text-gray-800">{metadata.font_size}px</span>
-                </div>
-              )}
-              {metadata.color && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Color:</span>
-                  <span
-                    className="inline-flex items-center px-2 py-0.5 rounded text-white text-xs font-mono"
-                    style={{ backgroundColor: metadata.color }}
-                  >
-                    {metadata.color}
-                  </span>
-                </div>
-              )}
-              {(metadata.start_time !== undefined || metadata.startTime !== undefined) && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">Start:</span>
-                  <span className="text-gray-800">
-                    {metadata.start_time || metadata.startTime}s
-                  </span>
-                </div>
-              )}
-              {(metadata.end_time !== undefined || metadata.endTime !== undefined) && (
-                <div className="flex gap-2 text-sm">
-                  <span className="font-semibold text-gray-700 min-w-[60px]">End:</span>
-                  <span className="text-gray-800">
-                    {metadata.end_time || metadata.endTime}s
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -148,17 +148,24 @@ const ChatInterface = ({
                 : 'Type your prompt here... (e.g., "Add subtitle Hello at 5 seconds")'
             }
             disabled={disabled || isProcessing}
-            className="flex-1 px-4 py-3 text-sm leading-6 border border-gray-200 rounded-lg resize-none max-h-32 font-inherit transition-colors duration-200 focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-            rows="1"
+            className="flex-1 px-4 py-3 text-base leading-6 border border-gray-200 rounded-lg resize-none max-h-40 font-inherit transition-colors duration-200 focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+            rows="3"
           />
           <button
             type="submit"
             disabled={disabled || isProcessing || !inputValue.trim()}
-            className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-primary text-white border-0 rounded-lg cursor-pointer transition-all duration-200 outline-none hover:bg-primary-dark hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/40 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+            className={`
+              flex-shrink-0 w-12 h-12 flex items-center justify-center border-0 rounded-lg cursor-pointer
+              transition-all duration-200 outline-none
+              ${!inputValue.trim() || disabled || isProcessing
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-br from-purple-600 to-purple-800 text-white hover:from-purple-700 hover:to-purple-900 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-600/40'
+              }
+            `}
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -171,9 +178,6 @@ const ChatInterface = ({
             </svg>
           </button>
         </form>
-        <div className="mt-2 text-xs text-gray-400 text-center">
-          Press <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-xs font-mono">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-xs font-mono">Shift + Enter</kbd> for new line
-        </div>
       </div>
     </div>
   );

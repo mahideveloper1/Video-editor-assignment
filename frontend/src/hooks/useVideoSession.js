@@ -21,19 +21,36 @@ export const useVideoSession = () => {
    * Initialize new session with uploaded video
    */
   const initializeSession = useCallback((videoData) => {
-    const sessionId = generateId();
+    // IMPORTANT: Use session_id from backend, NOT generate a new one!
+    const sessionId = videoData.session_id || videoData.sessionId;
 
-    setSession({
+    // Construct video URL from backend upload path
+    const videoUrl = videoData.videoUrl
+      || videoData.video_url
+      || `http://localhost:8000/uploads/${videoData.metadata?.filename || videoData.filename}`;
+
+    const sessionState = {
       sessionId,
-      videoId: videoData.videoId || videoData.video_id,
-      videoUrl: videoData.videoUrl || videoData.video_url,
+      videoId: sessionId, // Use session ID as video ID (backend uses same ID)
+      videoUrl,
       videoFile: videoData.file,
       videoMetadata: videoData.metadata || {},
       subtitles: [],
       chatHistory: [],
       isProcessing: false,
       error: null,
-    });
+    };
+
+    setSession(sessionState);
+
+    // Save to sessionStorage for persistence across reloads
+    sessionStorage.setItem('videoSession', JSON.stringify({
+      sessionId,
+      videoUrl,
+      metadata: videoData.metadata || {}
+    }));
+
+    console.log('✓ Session initialized:', sessionId);
 
     return sessionId;
   }, []);
@@ -92,6 +109,16 @@ export const useVideoSession = () => {
   }, []);
 
   /**
+   * Update video URL (for showing exported video)
+   */
+  const updateVideoUrl = useCallback((newVideoUrl) => {
+    setSession((prev) => ({
+      ...prev,
+      videoUrl: newVideoUrl,
+    }));
+  }, []);
+
+  /**
    * Reset session
    */
   const resetSession = useCallback(() => {
@@ -113,6 +140,7 @@ export const useVideoSession = () => {
     initializeSession,
     addChatMessage,
     updateSubtitles,
+    updateVideoUrl,
     setProcessing,
     setError,
     clearError,

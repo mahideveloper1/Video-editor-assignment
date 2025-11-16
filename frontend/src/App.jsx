@@ -2,6 +2,7 @@ import { useState } from 'react';
 import VideoUploader from './components/VideoUploader';
 import VideoPlayer from './components/VideoPlayer';
 import ChatInterface from './components/ChatInterface';
+import PreviewButton from './components/PreviewButton';
 import ExportButton from './components/ExportButton';
 import { useVideoSession } from './hooks/useVideoSession';
 import { sendChatMessage } from './services/api';
@@ -13,12 +14,15 @@ function App() {
     initializeSession,
     addChatMessage,
     updateSubtitles,
+    updateVideoUrl,
     setProcessing,
     setError,
     clearError,
   } = useVideoSession();
 
   const [showUploader, setShowUploader] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isShowingPreview, setIsShowingPreview] = useState(false);
 
   // Handle video upload success
   const handleUploadSuccess = (videoData) => {
@@ -73,18 +77,26 @@ function App() {
       console.log('API Response:', response);
 
       // Add AI response to chat
+      // Backend now returns message as an object with {type, content, timestamp, metadata}
+      const aiContent = response.message?.content || response.message || response.response || 'Subtitle updated successfully!';
+
       addChatMessage({
         type: MESSAGE_TYPES.AI,
-        content: response.message || response.response || 'Subtitle updated successfully!',
+        content: aiContent,
         timestamp: new Date(),
-        metadata: response.extracted_params || response.metadata || {},
       });
 
       // Update subtitles if provided
       if (response.subtitles) {
         updateSubtitles(response.subtitles);
+        // Clear preview since subtitles changed
+        setPreviewUrl(null);
+        setIsShowingPreview(false);
       } else if (response.subtitle) {
         updateSubtitles(response.subtitle);
+        // Clear preview since subtitles changed
+        setPreviewUrl(null);
+        setIsShowingPreview(false);
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -102,9 +114,43 @@ function App() {
     }
   };
 
+  // Handle preview ready
+  const handlePreviewReady = (exportData) => {
+    // Update video player to show preview with burned subtitles
+    const exportedVideoUrl = `http://localhost:8000${exportData.download_url}`;
+    updateVideoUrl(exportedVideoUrl);
+    setPreviewUrl(exportData.download_url);
+    setIsShowingPreview(true);
+
+    // Add system message
+    addChatMessage({
+      type: MESSAGE_TYPES.SYSTEM,
+      content: '✓ Preview ready! Review the video above. If satisfied, click "Download Video" to save it.',
+      timestamp: new Date(),
+    });
+  };
+
+  // Handle export success
+  const handleExportSuccess = (exportData) => {
+    // Update video player to show exported video with burned subtitles
+    const exportedVideoUrl = `http://localhost:8000${exportData.download_url}`;
+    updateVideoUrl(exportedVideoUrl);
+    setPreviewUrl(exportData.download_url);
+    setIsShowingPreview(true);
+
+    // Add system message
+    addChatMessage({
+      type: MESSAGE_TYPES.SYSTEM,
+      content: '✓ Video exported and downloaded successfully! You can continue editing or download again.',
+      timestamp: new Date(),
+    });
+  };
+
   // Handle new upload (reset)
   const handleNewUpload = () => {
     setShowUploader(true);
+    setPreviewUrl(null);
+    setIsShowingPreview(false);
   };
 
   return (
@@ -175,53 +221,31 @@ function App() {
                   videoUrl={session.videoUrl}
                   subtitles={session.subtitles}
                   videoMetadata={session.videoMetadata}
+                  showSubtitleOverlay={!isShowingPreview}
                 />
               </div>
 
-              {/* Export Button */}
+              {/* Preview & Export Buttons */}
               <div className="p-5 bg-white rounded-xl shadow-sm">
-                <ExportButton
-                  sessionId={session.sessionId}
-                  videoId={session.videoId}
-                  disabled={!session.videoId || session.subtitles.length === 0}
-                />
-                {session.subtitles.length === 0 && (
-                  <p className="mt-3 text-sm text-gray-600 text-center">
-                    Add at least one subtitle to enable export
-                  </p>
-                )}
+                <div className="flex flex-row gap-3">
+                  {/* Preview Button */}
+                  <PreviewButton
+                    sessionId={session.sessionId}
+                    disabled={!session.videoId || session.subtitles.length === 0}
+                    onPreviewReady={handlePreviewReady}
+                  />
+
+                  {/* Download Button */}
+                  <ExportButton
+                    sessionId={session.sessionId}
+                    videoId={session.videoId}
+                    disabled={!session.videoId || session.subtitles.length === 0}
+                    onExportSuccess={handleExportSuccess}
+                    previewUrl={previewUrl}
+                  />
+                </div>
               </div>
             </>
-          )}
-
-          {/* Subtitle List */}
-          {session.subtitles && session.subtitles.length > 0 && (
-            <div className="p-5 bg-white rounded-xl shadow-sm max-h-[400px] overflow-y-auto scrollbar-custom">
-              <h3 className="text-base font-semibold text-gray-800 mb-4">
-                Current Subtitles ({session.subtitles.length})
-              </h3>
-              <div className="flex flex-col gap-3">
-                {session.subtitles.map((subtitle, index) => (
-                  <div key={index} className="p-3 bg-gray-50 border-l-3 border-primary rounded-md">
-                    <div className="text-xs font-semibold text-primary mb-1.5">
-                      {subtitle.start_time || subtitle.startTime}s -{' '}
-                      {subtitle.end_time || subtitle.endTime}s
-                    </div>
-                    <div className="text-sm text-gray-800 mb-1.5 font-medium">
-                      {subtitle.text}
-                    </div>
-                    <div className="text-xs text-gray-600 flex items-center gap-1.5">
-                      {subtitle.font_family || subtitle.fontFamily} •{' '}
-                      {subtitle.font_size || subtitle.fontSize}px •{' '}
-                      <span
-                        className="inline-block w-4 h-4 rounded border border-gray-200"
-                        style={{ backgroundColor: subtitle.color }}
-                      ></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           )}
         </div>
 
