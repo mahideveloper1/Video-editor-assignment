@@ -11,8 +11,12 @@ import uuid
 from app.config import settings
 from app.models.schemas import UploadResponse, ErrorResponse
 from app.services.video_service import video_service, VideoProcessingError
+from app.services.silence_remover_service import SilenceRemoverService
 from app.utils.session import session_manager
 from app.utils.helpers import sanitize_filename
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter()
@@ -100,12 +104,44 @@ async def upload_video(
             detail=f"Invalid video file: {str(e)}"
         )
 
+    # Detect silence in video
+    silence_data = None
+    try:
+        logger.info(f"Detecting silence in uploaded video: {final_filename}")
+        silence_service = SilenceRemoverService(
+            noise_threshold="-30dB",
+            min_silence_duration=1.0
+        )
+        silence_segments, total_duration = silence_service.detect_silence(str(video_path))
+
+        if silence_segments:
+            silence_stats = silence_service.get_silence_stats(silence_segments, total_duration)
+            silence_data = {
+                "has_silence": True,
+                "segments": [s.to_dict() for s in silence_segments],
+                "stats": silence_stats
+            }
+            logger.info(f"Detected {len(silence_segments)} silent segments ({silence_stats['total_silence_duration']}s)")
+        else:
+            silence_data = {
+                "has_silence": False,
+                "segments": [],
+                "stats": {"total_silence_duration": 0, "silence_percentage": 0, "num_silent_segments": 0}
+            }
+            logger.info("No silence detected in video")
+    except Exception as e:
+        logger.warning(f"Failed to detect silence (non-critical): {str(e)}")
+        # Don't fail the upload if silence detection fails
+        silence_data = None
+
     # Create editing session
     try:
         session = session_manager.create_session(
             video_path=str(video_path),
             metadata=metadata
         )
+        # Note: silence_data is returned in the response, not stored in session
+
     except Exception as e:
         # Clean up on error
         video_path.unlink(missing_ok=True)
@@ -114,12 +150,19 @@ async def upload_video(
             detail=f"Failed to create session: {str(e)}"
         )
 
-    return UploadResponse(
-        session_id=session.session_id,
-        filename=safe_filename,
-        metadata=metadata,
-        message="Video uploaded successfully"
-    )
+    # Build response
+    response_data = {
+        "session_id": session.session_id,
+        "filename": safe_filename,
+        "metadata": metadata,
+        "message": "Video uploaded successfully"
+    }
+
+    # Add silence data to response if available
+    if silence_data:
+        response_data["silence_detection"] = silence_data
+
+    return UploadResponse(**response_data)
 
 
 @router.get("/video/{session_id}")

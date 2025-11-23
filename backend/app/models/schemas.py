@@ -113,12 +113,20 @@ class ChatResponse(BaseModel):
 
 
 # Upload Models
+class SilenceDetectionData(BaseModel):
+    """Silence detection results."""
+    has_silence: bool = Field(description="Whether silence was detected")
+    segments: List[Dict[str, float]] = Field(default_factory=list, description="Silent segments")
+    stats: Dict[str, Any] = Field(default_factory=dict, description="Silence statistics")
+
+
 class UploadResponse(BaseModel):
     """Response from video upload."""
     session_id: str = Field(description="Created session ID")
     filename: str = Field(description="Uploaded filename")
     metadata: VideoMetadata = Field(description="Video metadata")
     message: str = Field(description="Success message")
+    silence_detection: Optional[SilenceDetectionData] = Field(default=None, description="Silence detection results")
 
     class Config:
         json_schema_extra = {
@@ -134,7 +142,16 @@ class UploadResponse(BaseModel):
                     "format": "mp4",
                     "size": 52428800
                 },
-                "message": "Video uploaded successfully"
+                "message": "Video uploaded successfully",
+                "silence_detection": {
+                    "has_silence": True,
+                    "segments": [{"start": 5.2, "end": 8.5, "duration": 3.3}],
+                    "stats": {
+                        "total_silence_duration": 3.3,
+                        "silence_percentage": 2.74,
+                        "num_silent_segments": 1
+                    }
+                }
             }
         }
 

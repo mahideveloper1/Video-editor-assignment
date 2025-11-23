@@ -120,11 +120,12 @@ async def health_check():
 
 
 # Import and include routers
-from app.api.routes import upload, chat, export
+from app.api.routes import upload, chat, export, silence
 
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(export.router, prefix="/api", tags=["Export"])
+app.include_router(silence.router, tags=["Silence"])
 
 
 if __name__ == "__main__":

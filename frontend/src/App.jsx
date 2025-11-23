@@ -4,6 +4,7 @@ import VideoPlayer from './components/VideoPlayer';
 import ChatInterface from './components/ChatInterface';
 import PreviewButton from './components/PreviewButton';
 import ExportButton from './components/ExportButton';
+import SilenceRemoval from './components/SilenceRemoval';
 import { useVideoSession } from './hooks/useVideoSession';
 import { sendChatMessage } from './services/api';
 import { MESSAGE_TYPES } from './utils/constants';
@@ -23,6 +24,8 @@ function App() {
   const [showUploader, setShowUploader] = useState(true);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isShowingPreview, setIsShowingPreview] = useState(false);
+  const [silenceData, setSilenceData] = useState(null);
+  const [showSilenceRemoval, setShowSilenceRemoval] = useState(false);
 
   // Handle video upload success
   const handleUploadSuccess = (videoData) => {
@@ -30,6 +33,12 @@ function App() {
 
     // Initialize session with video data
     initializeSession(videoData);
+
+    // Store silence detection data if available
+    if (videoData.silence_detection) {
+      setSilenceData(videoData.silence_detection);
+      console.log('Silence detection:', videoData.silence_detection);
+    }
 
     // Hide uploader, show player
     setShowUploader(false);
@@ -146,11 +155,39 @@ function App() {
     });
   };
 
+  // Handle silence removed
+  const handleSilenceRemoved = (data) => {
+    console.log('Silence removed:', data);
+
+    // Update video URL to the new video without silence
+    const newVideoUrl = `http://localhost:8000${data.preview_url}`;
+    updateVideoUrl(newVideoUrl);
+
+    // Update subtitles with adjusted timestamps
+    if (data.subtitles) {
+      updateSubtitles(data.subtitles);
+      console.log('Subtitles adjusted after silence removal:', data.subtitles);
+    }
+
+    // Clear silence data
+    setSilenceData(null);
+    setShowSilenceRemoval(false);
+
+    // Add system message
+    addChatMessage({
+      type: MESSAGE_TYPES.SYSTEM,
+      content: `✓ ${data.message}. Video duration reduced from ${data.stats.total_duration}s to ${data.stats.duration_after_removal}s. Subtitles have been adjusted to match the new timeline.`,
+      timestamp: new Date(),
+    });
+  };
+
   // Handle new upload (reset)
   const handleNewUpload = () => {
     setShowUploader(true);
     setPreviewUrl(null);
     setIsShowingPreview(false);
+    setSilenceData(null);
+    setShowSilenceRemoval(false);
   };
 
   return (
@@ -225,24 +262,51 @@ function App() {
                 />
               </div>
 
+              {/* Silence Removal */}
+              {silenceData && showSilenceRemoval && (
+                <SilenceRemoval
+                  sessionId={session.sessionId}
+                  silenceData={silenceData}
+                  onSilenceRemoved={handleSilenceRemoved}
+                />
+              )}
+
               {/* Preview & Export Buttons */}
               <div className="p-5 bg-white rounded-xl shadow-sm">
                 <div className="flex flex-row gap-3">
                   {/* Preview Button */}
-                  <PreviewButton
-                    sessionId={session.sessionId}
-                    disabled={!session.videoId || session.subtitles.length === 0}
-                    onPreviewReady={handlePreviewReady}
-                  />
+                  <div className="flex-1">
+                    <PreviewButton
+                      sessionId={session.sessionId}
+                      disabled={!session.videoId || session.subtitles.length === 0}
+                      onPreviewReady={handlePreviewReady}
+                    />
+                  </div>
 
                   {/* Download Button */}
-                  <ExportButton
-                    sessionId={session.sessionId}
-                    videoId={session.videoId}
-                    disabled={!session.videoId || session.subtitles.length === 0}
-                    onExportSuccess={handleExportSuccess}
-                    previewUrl={previewUrl}
-                  />
+                  <div className="flex-1">
+                    <ExportButton
+                      sessionId={session.sessionId}
+                      videoId={session.videoId}
+                      disabled={!session.videoId || session.subtitles.length === 0}
+                      onExportSuccess={handleExportSuccess}
+                      previewUrl={previewUrl}
+                    />
+                  </div>
+
+                  {/* Remove Silence Button */}
+                  {silenceData && !showSilenceRemoval && (
+                    <div className="flex-1">
+                      <button
+                        onClick={() => setShowSilenceRemoval(true)}
+                        className="w-full px-6 py-3.5 text-base font-semibold text-white bg-purple-600 rounded-xl
+                          hover:bg-purple-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-600/40
+                          transition-all duration-200 flex items-center justify-center gap-2.5"
+                      >
+                        Remove Silence
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </>

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import ChatMessage from './ChatMessage';
+import VoiceInput from './VoiceInput';
 import { MESSAGE_TYPES } from '../utils/constants';
 
 const ChatInterface = ({
@@ -53,6 +54,13 @@ const ChatInterface = ({
       setInputValue(prompt);
       inputRef.current?.focus();
     }
+  };
+
+  const handleVoiceTranscript = (transcript) => {
+    // Set the transcript in the input field
+    setInputValue(transcript);
+    // Focus the input so user can edit if needed
+    inputRef.current?.focus();
   };
 
   return (
@@ -150,6 +158,10 @@ const ChatInterface = ({
             disabled={disabled || isProcessing}
             className="flex-1 px-4 py-3 text-base leading-6 border border-gray-200 rounded-lg resize-none max-h-40 font-inherit transition-colors duration-200 focus:outline-none focus:border-primary disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             rows="3"
+          />
+          <VoiceInput
+            onTranscript={handleVoiceTranscript}
+            disabled={disabled || isProcessing}
           />
           <button
             type="submit"

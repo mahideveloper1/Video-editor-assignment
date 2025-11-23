@@ -318,11 +318,21 @@ Example: {{"text": "Hello", "start_time": "0", "end_time": "5", "font_color": "r
                 # Get existing subtitle
                 existing = current_subtitles[index]
 
+                # Process font_color - convert color names to hex
+                new_font_color = existing.style.font_color
+                if edit.get("font_color") is not None:
+                    color = edit["font_color"]
+                    # Convert color name to hex if needed
+                    if not color.startswith("#"):
+                        new_font_color = color_name_to_hex(color)
+                    else:
+                        new_font_color = color
+
                 # Update only the fields that are specified (not None)
                 updated_style = SubtitleStyle(
                     font_family=edit.get("font_family") if edit.get("font_family") is not None else existing.style.font_family,
                     font_size=edit.get("font_size") if edit.get("font_size") is not None else existing.style.font_size,
-                    font_color=edit.get("font_color") if edit.get("font_color") is not None else existing.style.font_color,
+                    font_color=new_font_color,
                     position=edit.get("position") if edit.get("position") is not None else existing.style.position,
                     bold=edit.get("bold") if edit.get("bold") is not None else existing.style.bold,
                     italic=edit.get("italic") if edit.get("italic") is not None else existing.style.italic
@@ -343,6 +353,11 @@ Example: {{"text": "Hello", "start_time": "0", "end_time": "5", "font_color": "r
 
             else:
                 # ADD new subtitle
+                # Process font_color - convert color names to hex
+                font_color = edit.get("font_color") or settings.default_font_color
+                if font_color and not font_color.startswith("#"):
+                    font_color = color_name_to_hex(font_color)
+
                 subtitle = Subtitle(
                     id=generate_id("sub"),
                     text=edit["text"],
@@ -351,7 +366,7 @@ Example: {{"text": "Hello", "start_time": "0", "end_time": "5", "font_color": "r
                     style=SubtitleStyle(
                         font_family=edit.get("font_family") or settings.default_font_family,
                         font_size=edit.get("font_size") or settings.default_font_size,
-                        font_color=edit.get("font_color") or settings.default_font_color,
+                        font_color=font_color,
                         position=edit.get("position") or settings.default_subtitle_position,
                         bold=edit.get("bold") or False,
                         italic=edit.get("italic") or False
